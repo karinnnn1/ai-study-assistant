@@ -1,4 +1,7 @@
-import streamlit as st
+from src.ui import show_home
 
-st.title("AI Study Assistant")
-st.write("PDFを使って学習できるAIアプリ")
+
+show_home(
+    "AI Study Assistant",
+    "PDFを使って学習できるAIアプリ",
+)
