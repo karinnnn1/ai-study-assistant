@@ -4,6 +4,7 @@ from src.pdf_utils import (
     extract_pdf_text,
     get_pdf_page_count,
 )
+from src.summarizer import generate_simple_summary
 
 
 def show_home(title: str, description: str) -> None:
@@ -16,46 +17,35 @@ def show_home(title: str, description: str) -> None:
 
         study_mode = st.selectbox(
             "機能を選択してください",
-            ["学習記録", "要約", "Quiz", "Flashcards"],
+            [
+                "学習記録",
+                "要約",
+                "Quiz",
+                "Flashcards",
+            ],
         )
 
     st.info(f"選択中の機能：{study_mode}")
 
-    uploaded_file = st.file_uploader(
-        "学習するPDFをアップロードしてください",
-        type=["pdf"],
-    )
+    if study_mode == "学習記録":
+        show_study_history()
 
-    if uploaded_file is not None:
-        st.success(
-            f"「{uploaded_file.name}」をアップロードしました。"
+    elif study_mode == "要約":
+        show_summary()
+
+    elif study_mode == "Quiz":
+        st.info(
+            "Quiz機能は今後追加する予定です。"
         )
 
-        st.write(
-            f"ファイルサイズ：{uploaded_file.size} bytes"
+    elif study_mode == "Flashcards":
+        st.info(
+            "Flashcards機能は今後追加する予定です。"
         )
 
-        page_count = get_pdf_page_count(uploaded_file)
 
-        st.write(
-            f"ページ数：{page_count}ページ"
-        )
-
-        pdf_text = extract_pdf_text(uploaded_file)
-
-        st.subheader("抽出したテキスト")
-
-        if pdf_text:
-            st.text_area(
-                "PDFの内容",
-                value=pdf_text[:2000],
-                height=300,
-            )
-        else:
-            st.warning(
-                "PDFからテキストを抽出できませんでした。"
-            )
-
+def show_study_history() -> None:
+    """Display the study history feature."""
     if "study_history" not in st.session_state:
         st.session_state.study_history = []
 
@@ -84,3 +74,70 @@ def show_home(title: str, description: str) -> None:
             st.session_state.study_history
         ):
             st.write(f"- {topic}")
+
+
+def show_summary() -> None:
+    """Display the PDF summary feature."""
+    uploaded_file = st.file_uploader(
+        "要約するPDFをアップロードしてください",
+        type=["pdf"],
+    )
+
+    if uploaded_file is None:
+        st.info(
+            "PDFをアップロードすると要約できます。"
+        )
+        return
+
+    st.success(
+        f"「{uploaded_file.name}」をアップロードしました。"
+    )
+
+    st.write(
+        f"ファイルサイズ：{uploaded_file.size} bytes"
+    )
+
+    page_count = get_pdf_page_count(
+        uploaded_file
+    )
+
+    st.write(
+        f"ページ数：{page_count}ページ"
+    )
+
+    pdf_text = extract_pdf_text(
+        uploaded_file
+    )
+
+    if not pdf_text:
+        st.warning(
+            "PDFからテキストを抽出できませんでした。"
+        )
+        return
+
+    with st.expander("抽出したテキストを確認する"):
+        st.text_area(
+            "PDFの内容",
+            value=pdf_text[:2000],
+            height=250,
+        )
+
+    if st.button("要約を作成する"):
+        summary = generate_simple_summary(
+            pdf_text,
+            max_sentences=5,
+        )
+
+        st.session_state.summary = summary
+
+    if "summary" in st.session_state:
+        st.subheader("要約結果")
+
+        st.write(
+            st.session_state.summary
+        )
+
+        st.caption(
+            "この要約は原文から重要な文を選択した"
+            "無料の簡易要約です。"
+        )
