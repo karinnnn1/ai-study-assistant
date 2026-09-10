@@ -1,6 +1,9 @@
 import streamlit as st
 
-from src.pdf_utils import get_pdf_page_count
+from src.pdf_utils import (
+    extract_pdf_text,
+    get_pdf_page_count,
+)
 
 
 def show_home(title: str, description: str) -> None:
@@ -37,6 +40,21 @@ def show_home(title: str, description: str) -> None:
         st.write(
             f"ページ数：{page_count}ページ"
         )
+
+        pdf_text = extract_pdf_text(uploaded_file)
+
+        st.subheader("抽出したテキスト")
+
+        if pdf_text:
+            st.text_area(
+                "PDFの内容",
+                value=pdf_text[:2000],
+                height=300,
+            )
+        else:
+            st.warning(
+                "PDFからテキストを抽出できませんでした。"
+            )
 
     if "study_history" not in st.session_state:
         st.session_state.study_history = []
