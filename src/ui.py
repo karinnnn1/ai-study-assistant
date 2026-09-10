@@ -1,5 +1,6 @@
 import streamlit as st
 
+from src.flashcard_generator import generate_flashcards
 from src.pdf_utils import (
     extract_pdf_text,
     get_pdf_page_count,
@@ -43,9 +44,7 @@ def show_home(
         show_quiz()
 
     elif study_mode == "Flashcards":
-        st.info(
-            "Flashcards機能は今後追加する予定です。"
-        )
+        show_flashcards()
 
 
 def show_study_history() -> None:
@@ -258,3 +257,80 @@ def show_quiz() -> None:
             f"結果：{score} / "
             f"{len(questions)} 問正解"
         )
+
+
+def show_flashcards() -> None:
+    """Display the PDF flashcard feature."""
+    uploaded_file = st.file_uploader(
+        "Flashcardsを作成するPDFを"
+        "アップロードしてください",
+        type=["pdf"],
+        key="flashcard_pdf",
+    )
+
+    if uploaded_file is None:
+        st.info(
+            "PDFをアップロードすると"
+            "Flashcardsを作成できます。"
+        )
+        return
+
+    st.success(
+        f"「{uploaded_file.name}」をアップロードしました。"
+    )
+
+    st.write(
+        f"ファイルサイズ：{uploaded_file.size} bytes"
+    )
+
+    page_count = get_pdf_page_count(
+        uploaded_file
+    )
+
+    st.write(
+        f"ページ数：{page_count}ページ"
+    )
+
+    pdf_text = extract_pdf_text(
+        uploaded_file
+    )
+
+    if not pdf_text:
+        st.warning(
+            "PDFからテキストを抽出できませんでした。"
+        )
+        return
+
+    if st.button("Flashcardsを作成する"):
+        st.session_state.flashcards = (
+            generate_flashcards(
+                pdf_text,
+                max_cards=5,
+            )
+        )
+
+    if "flashcards" not in st.session_state:
+        return
+
+    flashcards = st.session_state.flashcards
+
+    if not flashcards:
+        st.warning(
+            "Flashcardsに使用できる文章が"
+            "見つかりませんでした。"
+        )
+        return
+
+    st.subheader("Flashcards")
+
+    st.caption(
+        "カードをクリックすると説明を確認できます。"
+    )
+
+    for index, card in enumerate(flashcards):
+        with st.expander(
+            f"カード {index + 1}：{card['front']}"
+        ):
+            st.write(
+                card["back"]
+            )
